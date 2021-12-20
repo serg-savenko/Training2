@@ -1,0 +1,38 @@
+<h1 id="tableLabel">Add new user with balance</h1>
+
+<form [formGroup]="userWithBalance" (ngSubmit)="onSubmit()">
+  <div class="input-group">
+    <input formControlName="name" placeholder="Name">
+    <input formControlName="surname" placeholder="Surname">
+  </div>
+
+  <div class="input-group">
+    <input type="number" formControlName="age" placeholder="Age">
+  </div>
+
+  <div class="input-group">
+    <input formControlName="registrationCity" placeholder="Registration city">
+  </div>
+
+  <div class="input-group">
+    <input formControlName="currency" placeholder="Currency">
+  </div>
+
+  <div>
+    <button (click)="addBalance()" type="button">+ Add another balance</button>
+
+    <ng-container formArrayName="balance">
+      <div class="input-group" *ngFor="let _ of balance.controls; index as i">
+        <ng-container [formGroupName]="i">
+          <input formControlName="date" placeholder="Balance change date" />
+          <input type="number" formControlName="amount" placeholder="Amount" />
+          <button (click)="removeBalance(i)">X</button>
+        </ng-container>
+      </div>
+    </ng-container>
+  </div>
+
+  <button type="submit" [disabled]="!userWithBalance.valid">Submit</button>
+
+  <p>Form Value: {{ userWithBalance.value | json }}</p>
+</form>

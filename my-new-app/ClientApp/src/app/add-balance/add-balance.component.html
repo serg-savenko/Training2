@@ -1,0 +1,34 @@
+<h1 id="tableLabel">Add balance</h1>
+
+<form [formGroup]="formBalance" (ngSubmit)="onSubmit()">
+  <div class="input-group">
+    <input value="{{user.name}}" disabled="disabled">
+    <input value="{{user.surname}}" disabled="disabled">
+  </div>
+
+  <div class="input-group">
+    <input value="{{ user.age }}" disabled="disabled">
+  </div>
+
+  <div class="input-group">
+    <input value="{{ user.registrationCity }}" disabled="disabled">
+  </div>
+
+  <div class="input-group">
+    <input value="{{ user.currency }}" disabled="disabled">
+  </div>
+
+  <div class="input-group">
+    <span>balanceNet: </span>
+    <input value="{{ user.balanceNet }}" disabled="disabled">
+  </div>
+
+  <div>
+      <input formControlName="date" placeholder="Balance change date" />
+      <input type="number" formControlName="amount" placeholder="Amount" />
+  </div>
+
+  <button type="submit" [disabled]="!formBalance.valid">Submit</button>
+
+  <p>Form Value: {{ formBalance.value | json }}</p>
+</form>

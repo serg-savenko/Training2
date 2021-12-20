@@ -1,0 +1,5 @@
+{
+  "ConnectionStrings": {
+    "LiteDB": "Filename=MyDataTesting.db;connection=shared",
+  },
+}

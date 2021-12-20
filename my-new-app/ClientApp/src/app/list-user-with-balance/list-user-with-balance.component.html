@@ -1,0 +1,34 @@
+<h1 id="tableLabel">Users with balance</h1>
+
+<p *ngIf="!users"><em>Loading...</em></p>
+
+<table class='table table-striped' aria-labelledby="tableLabel" *ngIf="users">
+  <thead>
+    <tr>
+      <th>Id</th>
+      <th>Name</th>
+      <th>Surname</th>
+      <th>Age</th>
+      <th>Registration city</th>
+      <th>Currency</th>
+      <th>BalanceNet</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr *ngFor="let u of users">
+      <td>{{ u.id }}</td>
+      <td>{{ u.name }}</td>
+      <td>{{ u.surname }}</td>
+      <td>{{ u.age }}</td>
+      <td>{{ u.registrationCity }}</td>
+      <td>{{ u.currency }}</td>
+      <td>{{ u.balanceNet }}</td>
+      <td>
+        <button type="button" (click)="editBtnClick(u.id)">Edit</button>
+        <button type="button" (click)="deleteBtnClick(u.id)">Delete</button>
+        <button type="button" (click)="addBalanceBtnClick(u.id)">Add Balance</button>
+      </td>
+    </tr>
+  </tbody>
+</table>
