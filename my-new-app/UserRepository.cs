@@ -40,10 +40,8 @@ namespace my_new_app
 
         public User AddBalance(int userId, Balance b)
         {
-            User user = db.GetCollection<User>().FindById(userId);
-            user.Balance.Add(b);
-            ModifyUser(user);
-            return user;
+            db.Execute("update User set Balance = concat($.Balance, {\"Date\": @0, \"Amount\": @1}) where _id = @2", b.Date, b.Amount, userId);
+            return GetUser(userId);
         }
     }
 }
