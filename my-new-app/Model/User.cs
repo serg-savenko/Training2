@@ -1,5 +1,6 @@
 ﻿using LiteDB;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 
 namespace my_new_app.Model
@@ -9,6 +10,7 @@ namespace my_new_app.Model
         public int Id { get; set; }
         public string Name { get; set; }
         public string Surname { get; set; }
+        [Range(16, 300)]
         public int Age { get; set; }
         public string RegistrationCity { get; set; }
         public string Currency { get; set; }

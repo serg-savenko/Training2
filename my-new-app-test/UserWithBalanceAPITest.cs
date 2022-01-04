@@ -89,14 +89,14 @@ namespace my_new_app_test
         [Fact]
         public async void AddUserWithBalance()
         {
-            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 10, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
+            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 20, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
             var content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
             var u = JsonConvert.DeserializeObject<UserWithBalance>(content);
             Assert.True(u.Id > 0);
             Assert.Equal("new", u.Name);
             Assert.Equal("new", u.Surname);
-            Assert.Equal(10, u.Age);
+            Assert.Equal(20, u.Age);
             Assert.Equal("kyiv", u.RegistrationCity);
             Assert.Equal("uah", u.currency);
             Assert.Equal(0, u.BalanceNet);
@@ -106,7 +106,7 @@ namespace my_new_app_test
         [Fact]
         public async void EditUserWithBalanceById()
         {
-            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 10, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
+            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 20, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
             var content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
             var u = JsonConvert.DeserializeObject<UserWithBalance>(content);
@@ -121,7 +121,7 @@ namespace my_new_app_test
             Assert.True(u.Id > 0);
             Assert.Equal("ModifiedName", u.Name);
             Assert.Equal("new", u.Surname);
-            Assert.Equal(10, u.Age);
+            Assert.Equal(20, u.Age);
             Assert.Equal("kyiv", u.RegistrationCity);
             Assert.Equal("uah", u.currency);
             Assert.Equal(0, u.BalanceNet);
@@ -131,7 +131,7 @@ namespace my_new_app_test
         [Fact]
         public async void DeleteAddedUserWithBalance()
         {
-            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 10, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
+            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 20, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
             var content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
             var u = JsonConvert.DeserializeObject<UserWithBalance>(content);
@@ -147,7 +147,7 @@ namespace my_new_app_test
         [Fact]
         public async void AddBalanceToNewUser()
         {
-            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 10, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
+            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 20, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
             var content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
             var u = JsonConvert.DeserializeObject<UserWithBalance>(content);
@@ -159,6 +159,15 @@ namespace my_new_app_test
 
             Assert.Equal(2, u.BalanceNet);
             Assert.Single(u.Balance);
+        }
+
+        [Fact]
+        public async void AddUserWithAgeLessThen16IsForbidden()
+        {
+            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 10, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
+            Assert.Contains("The field Age must be between 16 and 300", content);
         }
     }
 }
