@@ -5,8 +5,10 @@ using my_new_app.Model;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,6 +23,24 @@ namespace my_new_app_test
         {
             public string Date { get; set; }
             public decimal Amount { get; set; }
+
+            public Balance(string date, decimal amount)
+            {
+                this.Date = date;
+                this.Amount = amount;
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is Balance balance &&
+                       Date == balance.Date &&
+                       Amount == balance.Amount;
+            }
+
+            public override int GetHashCode()
+            {
+                return HashCode.Combine(Date, Amount);
+            }
         }
 
         private class UserWithBalance
@@ -30,9 +50,56 @@ namespace my_new_app_test
             public string Surname { get; set; }
             public int Age { get; set; }
             public string RegistrationCity { get; set; }
-            public string currency { get; set; }
+            public string Currency { get; set; }
             public decimal BalanceNet { get; set; }
-            public List<Balance> Balance { get; set; }
+            public List<Balance> Balance { get; set; } = new List<Balance>();
+
+            public static UserWithBalance CreatePredefinedUser()
+            {
+                return new UserWithBalance
+                {
+                    Id = 10,
+                    Name = "name10",
+                    Surname = "surname10",
+                    Age = 22,
+                    RegistrationCity = "lviv",
+                    Currency = "uah",
+                    BalanceNet = 8m,
+                    Balance = new List<Balance>() { new Balance("2021-01-01", 1), new Balance("2021-01-02", 1),
+                        new Balance("2021-01-03", -5), new Balance("2021-01-01", 10), new Balance("2021-01-01", 1)
+                    }
+                };
+            }
+            public static UserWithBalance CreateUserWithoutId()
+            {
+                return new UserWithBalance
+                {
+                    Name = "new",
+                    Surname = "new surname",
+                    Age = 20,
+                    RegistrationCity = "kyiv",
+                    Currency = "uah",
+                    BalanceNet = 0,
+                };
+            }
+
+            public bool EqualsWithoutId(object obj)
+            {
+                return obj is UserWithBalance balance &&
+                       Name == balance.Name &&
+                       Surname == balance.Surname &&
+                       Age == balance.Age &&
+                       RegistrationCity == balance.RegistrationCity &&
+                       Currency == balance.Currency &&
+                       BalanceNet == balance.BalanceNet &&
+                       Balance.SequenceEqual(balance.Balance);
+            }
+            public bool EqualsWithId(object obj)
+            {
+                return obj is UserWithBalance balance &&
+                       Id == balance.Id &&
+                       EqualsWithoutId(balance);
+            }
         }
 
         public UserWithBalanceAPITest(ITestOutputHelper output)
@@ -47,124 +114,118 @@ namespace my_new_app_test
 
 
         [Fact]
-        public async void GetListOfUsersWithBalance()
+        public async void TestGetListOfUsers()
         {
+            var predefinedUser = UserWithBalance.CreatePredefinedUser();
             var response = await httpClient.GetAsync("/userwithbalance");
             var content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
             var users = JsonConvert.DeserializeObject<List<UserWithBalance>>(content);
             Assert.True(users.Count >= 1);
-            var u = users[0];
-            Assert.Equal(10, u.Id);
-            Assert.Equal("name10", u.Name);
-            Assert.Equal("surname10", u.Surname);
-            Assert.Equal(22, u.Age);
-            Assert.Equal("lviv", u.RegistrationCity);
-            Assert.Equal("uah", u.currency);
-            Assert.Equal(8.0m, u.BalanceNet);
-            Assert.Equal(5, u.Balance.Count);
-            Assert.Equal("2021-01-01", u.Balance[0].Date);
-            Assert.Equal(1, u.Balance[0].Amount);
+            Assert.True(predefinedUser.EqualsWithId(users[0]));
         }
 
         [Fact]
-        public async void GetUserWithBalanceById()
+        public async void TestGetUserWithBalanceById()
         {
+            var predefinedUser = UserWithBalance.CreatePredefinedUser();
             var response = await httpClient.GetAsync("/userwithbalance/10");
             var content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-            var u = JsonConvert.DeserializeObject<UserWithBalance>(content);
-            Assert.Equal(10, u.Id);
-            Assert.Equal("name10", u.Name);
-            Assert.Equal("surname10", u.Surname);
-            Assert.Equal(22, u.Age);
-            Assert.Equal("lviv", u.RegistrationCity);
-            Assert.Equal("uah", u.currency);
-            Assert.Equal(8.0m, u.BalanceNet);
-            Assert.Equal(5, u.Balance.Count);
-            Assert.Equal("2021-01-01", u.Balance[0].Date);
-            Assert.Equal(1, u.Balance[0].Amount);
+            var user = JsonConvert.DeserializeObject<UserWithBalance>(content);
+            Assert.True(predefinedUser.EqualsWithId(user));
+        }
+
+        [Fact]
+        public async void TestGetNonExistingUserWithBalanceById()
+        {
+            var predefinedUser = UserWithBalance.CreatePredefinedUser();
+            var response = await httpClient.GetAsync("/userwithbalance/0");
+            var content = await response.Content.ReadAsStringAsync();
+            Assert.Equal(System.Net.HttpStatusCode.NoContent, response.StatusCode);
         }
 
         [Fact]
         public async void AddUserWithBalance()
         {
-            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 20, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
+            var newUser = UserWithBalance.CreateUserWithoutId();
+            var response = await httpClient.PostAsync(
+                "/userwithbalance", new StringContent(JsonConvert.SerializeObject(newUser), Encoding.UTF8, "text/json"));
             var content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-            var u = JsonConvert.DeserializeObject<UserWithBalance>(content);
-            Assert.True(u.Id > 0);
-            Assert.Equal("new", u.Name);
-            Assert.Equal("new", u.Surname);
-            Assert.Equal(20, u.Age);
-            Assert.Equal("kyiv", u.RegistrationCity);
-            Assert.Equal("uah", u.currency);
-            Assert.Equal(0, u.BalanceNet);
-            Assert.Empty(u.Balance);
+            var savedUser = JsonConvert.DeserializeObject<UserWithBalance>(content);
+            Assert.True(savedUser.Id > 0);
+            Assert.True(newUser.EqualsWithoutId(savedUser));
         }
 
         [Fact]
         public async void EditUserWithBalanceById()
         {
-            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 20, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
+            var newUser = UserWithBalance.CreateUserWithoutId();
+            var response = await httpClient.PostAsync(
+                "/userwithbalance", new StringContent(JsonConvert.SerializeObject(newUser), Encoding.UTF8, "text/json"));
             var content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-            var u = JsonConvert.DeserializeObject<UserWithBalance>(content);
+            var savedUser = JsonConvert.DeserializeObject<UserWithBalance>(content);
 
-            u.Name = "ModifiedName";
+            savedUser.Name = "ModifiedName";
 
-            response = await httpClient.PutAsync("/userwithbalance", new StringContent(JsonConvert.SerializeObject(u), Encoding.UTF8, "text/json"));
+            response = await httpClient.PutAsync(
+                "/userwithbalance", new StringContent(JsonConvert.SerializeObject(savedUser), Encoding.UTF8, "text/json"));
             content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-            u = JsonConvert.DeserializeObject<UserWithBalance>(content);
+            var modifiedUser = JsonConvert.DeserializeObject<UserWithBalance>(content);
 
-            Assert.True(u.Id > 0);
-            Assert.Equal("ModifiedName", u.Name);
-            Assert.Equal("new", u.Surname);
-            Assert.Equal(20, u.Age);
-            Assert.Equal("kyiv", u.RegistrationCity);
-            Assert.Equal("uah", u.currency);
-            Assert.Equal(0, u.BalanceNet);
-            Assert.Empty(u.Balance);
+            Assert.True(savedUser.EqualsWithId(modifiedUser));
         }
 
         [Fact]
         public async void DeleteAddedUserWithBalance()
         {
-            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 20, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
+            var newUser = UserWithBalance.CreateUserWithoutId();
+            var response = await httpClient.PostAsync(
+                "/userwithbalance", new StringContent(JsonConvert.SerializeObject(newUser), Encoding.UTF8, "text/json"));
             var content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-            var u = JsonConvert.DeserializeObject<UserWithBalance>(content);
+            var savedUsed = JsonConvert.DeserializeObject<UserWithBalance>(content);
 
-            response = await httpClient.DeleteAsync($"/userwithbalance/{u.Id}");
+            response = await httpClient.DeleteAsync($"/userwithbalance/{savedUsed.Id}");
             content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
 
-            response = await httpClient.GetAsync($"/userwithbalance/{u.Id}");
+            response = await httpClient.GetAsync($"/userwithbalance/{savedUsed.Id}");
             Assert.Equal(System.Net.HttpStatusCode.NoContent, response.StatusCode);
         }
 
         [Fact]
         public async void AddBalanceToNewUser()
         {
-            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 20, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
+            var newUser = UserWithBalance.CreateUserWithoutId();
+            var response = await httpClient.PostAsync(
+                "/userwithbalance", new StringContent(JsonConvert.SerializeObject(newUser), Encoding.UTF8, "text/json"));
             var content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-            var u = JsonConvert.DeserializeObject<UserWithBalance>(content);
+            var savedUser = JsonConvert.DeserializeObject<UserWithBalance>(content);
 
-            response = await httpClient.PostAsync($"/userwithbalance/{u.Id}/balance", new StringContent("{ \"date\": \"2022-01-01\", \"amount\": 2.00 }", Encoding.UTF8, "text/json"));
+            var newBalance = new Balance("2022-01-01", 2.00m);
+            response = await httpClient.PostAsync(
+                $"/userwithbalance/{savedUser.Id}/balance",
+                new StringContent(JsonConvert.SerializeObject(newBalance), Encoding.UTF8, "text/json"));
             content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
-            u = JsonConvert.DeserializeObject<UserWithBalance>(content);
+            savedUser = JsonConvert.DeserializeObject<UserWithBalance>(content);
 
-            Assert.Equal(2, u.BalanceNet);
-            Assert.Single(u.Balance);
+            Assert.Equal(2, savedUser.BalanceNet);
+            Assert.Equal(savedUser.Balance[0], newBalance);
         }
 
         [Fact]
         public async void AddUserWithAgeLessThen16IsForbidden()
         {
-            var response = await httpClient.PostAsync("/userwithbalance", new StringContent("{ \"name\": \"new\", \"surname\": \"new\", \"age\": 10, \"registrationCity\": \"kyiv\", \"currency\": \"uah\", \"balance\": [] }", Encoding.UTF8, "text/json"));
+            var newUser = UserWithBalance.CreateUserWithoutId();
+            newUser.Age = 12;
+            var response = await httpClient.PostAsync(
+                "/userwithbalance", new StringContent(JsonConvert.SerializeObject(newUser), Encoding.UTF8, "text/json"));
             var content = await response.Content.ReadAsStringAsync();
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, response.StatusCode);
             Assert.Contains("The field Age must be between 16 and 300", content);
